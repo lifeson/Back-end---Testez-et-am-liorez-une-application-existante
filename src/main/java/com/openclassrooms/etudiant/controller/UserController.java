@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping
 @RequiredArgsConstructor
@@ -28,10 +30,12 @@ public class UserController {
     }
 
     @PostMapping("/api/login")
-    public ResponseEntity<?> login(LoginRequestDTO loginRequestDTO) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) {
+        // Fix: was missing @RequestBody, so a JSON body was never bound to the DTO
+        // (Spring fell back to query/form-param binding, leaving login/password null).
         String jwtToken = userService.login(loginRequestDTO.getLogin(), loginRequestDTO.getPassword());
-        return ResponseEntity.ok(jwtToken);
+        // Wrapping the token in an object rather than returning a bare string is more
+        // conventional for API consumers and leaves room to add fields later (e.g. expiresIn).
+        return ResponseEntity.ok(Map.of("token", jwtToken));
     }
-
-
 }

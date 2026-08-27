@@ -5,6 +5,7 @@ import com.openclassrooms.etudiant.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,15 +37,26 @@ public class UserService {
     public String login(String login, String password) {
         Assert.notNull(login, "Login must not be null");
         Assert.notNull(password, "Password must not be null");
-        Optional<User> user = userRepository.findByLogin(login);
-        if (user.isPresent() && passwordEncoder.matches(password, password)) {
-            UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                    .username(login).build();
-            return jwtService.generateToken(userDetails);
-        } else {
-            throw new IllegalArgumentException("Invalid credentials");
+
+        Optional<User> optionalUser = userRepository.findByLogin(login);
+
+        // Fix: was passwordEncoder.matches(password, password) - comparing the raw
+        // password to itself, so any password succeeded as long as the login existed.
+        // Now compares the raw password against the stored hash.
+        if (optionalUser.isEmpty() || !passwordEncoder.matches(password, optionalUser.get().getPassword())) {
+            // BadCredentialsException maps to 401 via RestExceptionHandler, which is more
+            // correct than the previous IllegalArgumentException (400) for a failed login,
+            // and it doesn't leak whether the login itself exists.
+            throw new BadCredentialsException("Invalid credentials");
         }
+
+        User user = optionalUser.get();
+        UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(user.getAuthorities())
+                .build();
+
+        return jwtService.generateToken(userDetails);
     }
-
-
 }
