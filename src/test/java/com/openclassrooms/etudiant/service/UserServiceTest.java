@@ -18,12 +18,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/* [P2.4.E1] Analyse du code de test
+ * Test unitaires.
+ */
+
 @ExtendWith(SpringExtension.class)
 public class UserServiceTest {
     private static final String FIRST_NAME = "John";
     private static final String LAST_NAME = "Doe";
     private static final String LOGIN = "LOGIN";
     private static final String PASSWORD = "PASSWORD";
+
+    /* [P2.4.E1] Analyse du code de test
+     * Isolation des dépendances:
+     * UserRepository et PasswordEncoder sont mockées (Mockito),
+     * et injectés dans une vraie instance de UserService.
+    * */
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -36,10 +46,16 @@ public class UserServiceTest {
         // GIVEN
 
         // THEN
+        /* [P2.4.E1] Analyse du code de test
+         * Test des cas d'erreur par assertion d'exception.
+         */
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> userService.register(null));
     }
 
+    /* [P2.4.E1] Analyse du code de test
+     * Stubbing du comportement des mocks** avec when(...).thenReturn(...)
+     */
     @Test
     public void test_create_already_exist_user_throws_IllegalArgumentException() {
         // GIVEN
@@ -71,6 +87,11 @@ public class UserServiceTest {
         userService.register(user);
 
         // THEN
+        /* [P2.4.E1] Analyse du code de test
+         * Vérification du comportement via ArgumentCaptor + verify() dans le cas nominal.
+         * Le test capture l'objet réellement passé à userRepository.save(...) et vérifie
+         * qu'il correspond à l'utilisateur attendu.
+         */
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         assertThat(userCaptor.getValue()).isEqualTo(user);

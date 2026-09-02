@@ -46,6 +46,15 @@ public class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    /* [P2.4.E1] Analyse du code de test
+     * Tests d'intégration.
+     * - Bout-en-bout via une vraie stack HTTP simulée:
+     * MockMvc envoie de vraies requêtes HTTP (POST, JSON) au controller réel.
+     * - Base de données réelle et jetable via Testcontainers:
+     * un conteneur MySQL est démarré pour la classe de test, avec injection
+     * dynamique de ses coordonnées de connexion.
+     */
+
     @DynamicPropertySource
     static void configureTestProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", () -> mySQLContainer.getJdbcUrl());
@@ -55,11 +64,20 @@ public class UserControllerTest {
 
     }
 
+    /* [P2.4.E1] Analyse du code de test
+     * Isolation entre tests, chaque test parte d'un état propre.
+     */
     @AfterEach
     public void afterEach() {
         userRepository.deleteAll();
     }
 
+    /* [P2.4.E1] Analyse du code de test
+     * Assertions sur la réponse HTTP uniquement:
+     * MockMvcResultMatchers.status().isBadRequest() et .isCreated(),
+     * vérification du contrat HTTP externe (code de statut), pas l'état interne.
+     * .andDo(print())` est laissé en place pour faciliter le debug en cas d'échec.
+     */
     @Test
     public void registerUserWithoutRequiredData() throws Exception {
         // GIVEN
@@ -74,6 +92,12 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
+    /* [P2.4.E1] Analyse du code de test
+     * Préparation d'état via les couches internes plutôt que via l'API:
+     * le test appelle directement userService.register(user) pour créer la précondition,
+     * puis exerce l'API testée (`POST /api/register`) par-dessus,
+     * c'est une façon d'isoler la donnée de setup de l'action testée.
+     */
     @Test
     public void registerAlreadyExistUser() throws Exception {
         // GIVEN
