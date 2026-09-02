@@ -1,6 +1,7 @@
 package com.openclassrooms.etudiant.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openclassrooms.etudiant.dto.LoginRequestDTO;
 import com.openclassrooms.etudiant.dto.RegisterDTO;
 import com.openclassrooms.etudiant.entities.User;
 import com.openclassrooms.etudiant.repository.UserRepository;
@@ -92,12 +93,6 @@ public class UserControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 
-    /* [P2.4.E1] Analyse du code de test
-     * Préparation d'état via les couches internes plutôt que via l'API:
-     * le test appelle directement userService.register(user) pour créer la précondition,
-     * puis exerce l'API testée (`POST /api/register`) par-dessus,
-     * c'est une façon d'isoler la donnée de setup de l'action testée.
-     */
     @Test
     public void registerAlreadyExistUser() throws Exception {
         // GIVEN
@@ -139,5 +134,31 @@ public class UserControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(MockMvcResultMatchers.status().isCreated());
+    }
+
+    // TI-01 : POST /api/login - cas nominal
+    @Test
+    public void loginWithValidCredentials() throws Exception {
+        // GIVEN
+        User user = new User();
+        user.setFirstName(FIRST_NAME);
+        user.setLastName(LAST_NAME);
+        user.setLogin(LOGIN);
+        user.setPassword(PASSWORD);
+        userService.register(user);
+
+        LoginRequestDTO loginRequestDTO = new LoginRequestDTO();
+        loginRequestDTO.setLogin(LOGIN);
+        loginRequestDTO.setPassword(PASSWORD);
+
+        // WHEN
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/login")
+                        .content(objectMapper.writeValueAsString(loginRequestDTO))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                // THEN
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.token").isNotEmpty());
     }
 }
