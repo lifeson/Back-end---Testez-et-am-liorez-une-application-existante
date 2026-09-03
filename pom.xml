@@ -28,6 +28,11 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!-- JVM des tests (Surefire) :
+		     - heap borné + SerialGC : évite la réservation mémoire virtuelle de G1 (crash "insufficient memory") ;
+		     - EnableDynamicAgentLoading + Xshare:off : permet à Mockito de s'auto-attacher comme agent.
+		     JaCoCo préfixe automatiquement son -javaagent à cette valeur. -->
+		<argLine>-Xmx768m -XX:MaxMetaspaceSize=384m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<lombok.version>1.18.32</lombok.version>
 		<testcontainers.version>1.20.0</testcontainers.version>
@@ -184,6 +189,28 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+					<execution>
+						<!-- Échoue le build (mvn verify) si la couverture de lignes < 80 %. -->
+						<id>check-coverage</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
